@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import * as onl from "./goonline";
+import GoOnline from "./goonline";
 
 class Main extends PIXI.Application {
     public constructor() {
@@ -25,5 +25,5 @@ class Main extends PIXI.Application {
     }
 }
 
-(window as any).onl = onl;
+(window as any).GoOnline = GoOnline.getInstance();
 const main: Main = new Main();
