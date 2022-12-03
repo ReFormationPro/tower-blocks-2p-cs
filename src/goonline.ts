@@ -1,55 +1,48 @@
+/**
+ * Adapted from
+ * https://github.com/webrtc/FirebaseRTC/blob/solution/public/app.js
+ */
 import { firebaseDb } from "./firebase.js";
 import * as fs from "firebase/firestore";
-
-const configuration = {
-    iceServers: [
-        {
-            urls: [
-                "stun:stun1.l.google.com:19302",
-                "stun:stun2.l.google.com:19302"
-            ]
-        },
-        {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        }
-    ],
-    iceCandidatePoolSize: 10
-};
+import configuration from "./webrtcConfig.json";
 
 let peerConnection: RTCPeerConnection | null = null;
-let roomId = null;
-let dataChannel = null;
+let roomId: string | null = null;
+let dataChannel: RTCDataChannel | null = null;
 
 function registerPeerConnectionListeners() {
-    peerConnection.addEventListener("icegatheringstatechange", () => {
+    peerConnection!.addEventListener("icegatheringstatechange", () => {
         console.log(
-            `ICE gathering state changed: ${peerConnection.iceGatheringState}`
+            `ICE gathering state changed: ${peerConnection!.iceGatheringState}`
         );
     });
 
-    peerConnection.addEventListener("connectionstatechange", () => {
+    peerConnection!.addEventListener("connectionstatechange", () => {
         console.log(
-            `Connection state change: ${peerConnection.connectionState}`
+            `Connection state change: ${peerConnection!.connectionState}`
         );
     });
 
-    peerConnection.addEventListener("signalingstatechange", () => {
-        console.log(`Signaling state change: ${peerConnection.signalingState}`);
+    peerConnection!.addEventListener("signalingstatechange", () => {
+        console.log(
+            `Signaling state change: ${peerConnection!.signalingState}`
+        );
     });
 
-    peerConnection.addEventListener("iceconnectionstatechange ", () => {
+    peerConnection!.addEventListener("iceconnectionstatechange ", () => {
         console.log(
-            `ICE connection state change: ${peerConnection.iceConnectionState}`
+            `ICE connection state change: ${peerConnection!.iceConnectionState}`
         );
     });
 }
 
-export async function createRoom() {
+/**
+ * @returns string Room Id of the newly created room
+ */
+export async function createRoom(): Promise<string> {
     //const roomRef = await firebaseDb.collection("rooms").doc();
-    const roomsCol = await fs.collection(firebaseDb, "rooms");
-    const roomRef = await fs.doc<fs.DocumentData>(roomsCol);
+    const roomsCol = fs.collection(firebaseDb, "rooms");
+    const roomRef = fs.doc(roomsCol);
 
     console.log("Create PeerConnection with configuration: ", configuration);
     peerConnection = new RTCPeerConnection(configuration);
@@ -100,12 +93,12 @@ export async function createRoom() {
     // Listening for remote session description below
     fs.onSnapshot(roomRef, async (snapshot) => {
         const data = snapshot.data();
-        if (!peerConnection.currentRemoteDescription && data && data.answer) {
+        if (!peerConnection!.currentRemoteDescription && data && data.answer) {
             console.log("Got remote description: ", data.answer);
             const rtcSessionDescription = new RTCSessionDescription(
                 data.answer
             );
-            await peerConnection.setRemoteDescription(rtcSessionDescription);
+            await peerConnection!.setRemoteDescription(rtcSessionDescription);
         }
     });
     // Listening for remote session description above
@@ -118,19 +111,25 @@ export async function createRoom() {
                 console.log(
                     `Got new remote ICE candidate: ${JSON.stringify(data)}`
                 );
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+                await peerConnection!.addIceCandidate(
+                    new RTCIceCandidate(data)
+                );
             }
         });
     });
     // Listen for remote ICE candidates above
+    return roomRef.id;
 }
 
-export async function joinRoomById(roomId) {
-    const roomRef = fs.doc(firebaseDb, "rooms", roomId.toString());
+/**
+ * @param roomId Id of the room to join
+ */
+export async function joinRoomById(roomId: string) {
+    const roomRef = fs.doc(firebaseDb, "rooms", roomId);
     const roomSnapshot = await fs.getDoc(roomRef);
     console.log("Got room:", roomSnapshot.exists);
 
-    if (roomSnapshot.exists) {
+    if (roomSnapshot.exists()) {
         console.log(
             "Create PeerConnection with configuration: ",
             configuration
@@ -193,7 +192,7 @@ export async function joinRoomById(roomId) {
                     console.log(
                         `Got new remote ICE candidate: ${JSON.stringify(data)}`
                     );
-                    await peerConnection.addIceCandidate(
+                    await peerConnection!.addIceCandidate(
                         new RTCIceCandidate(data)
                     );
                 }
@@ -203,7 +202,10 @@ export async function joinRoomById(roomId) {
     }
 }
 
-export async function hangUp(e) {
+/**
+ * Closes the connection and erases the room
+ */
+export async function hangUp() {
     if (peerConnection) {
         peerConnection.close();
     }
@@ -212,11 +214,11 @@ export async function hangUp(e) {
     if (roomId) {
         const roomsCollection = fs.collection(firebaseDb, "rooms");
         const roomRef = fs.doc(roomsCollection, roomId);
-        const calleeCandidatesCollection = await fs.collection(
+        const calleeCandidatesCollection = fs.collection(
             roomRef,
             "calleeCandidates"
         );
-        const callerCandidatesCollection = await fs.collection(
+        const callerCandidatesCollection = fs.collection(
             roomRef,
             "callerCandidates"
         );
