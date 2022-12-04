@@ -3,6 +3,7 @@ import Entity from "./Entity";
 import GoOnline from "./goonline";
 import History from "./History";
 import InputHistory from "./InputHistory";
+import InputReceiver from "./InputReceiver";
 
 class Main extends PIXI.Application {
     private tickCount = 0;
@@ -50,7 +51,8 @@ class Main extends PIXI.Application {
                 // Push input here as input should be updated with some period and the tick
                 // must be processed once. Furthermore, the player sees the current state as render loop
                 // tries to get here as fast as possible. 
-                const currentInputs = {};   // TODO
+                const currentInputs: {[key: string]: boolean} = {};
+                currentInputs["space"] = InputReceiver.getInstance().isKeyDown("space") || InputReceiver.getInstance().isKeyDown("mouse1");
                 InputHistory.getInstance().updateInputs(this.nextGameTick, currentInputs);
                 this.updateLoop(this.nextGameTick++);
             }
