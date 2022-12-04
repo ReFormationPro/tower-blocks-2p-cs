@@ -1,10 +1,14 @@
 import * as PIXI from "pixi.js";
 import Entity from "./Entity";
 import GoOnline from "./goonline";
+import History from "./History";
 
 class Main extends PIXI.Application {
     private tickCount = 0;
+    private nextGameTick = 1;
     private entities: Entity[] = [];
+    private static GAME_LOOP_PERIOD = 100;
+    private shouldUpdateGame = true;
 
     public constructor() {
         // PIXI.utils.skipHello();
@@ -34,6 +38,52 @@ class Main extends PIXI.Application {
 
             this.tickCount++;
         });
+
+        /**
+         * The loop of game updates
+         * This is where the synchronized state of the game is updated
+         */
+        window.setInterval(() => {
+            // TODO Maybe synchronize this interval between players with timestamps?
+            if (this.shouldUpdateGame) {
+                this.updateLoop(this.nextGameTick++);
+            }
+        }, Main.GAME_LOOP_PERIOD);
+    }
+
+    /**
+     * Rewinds back to last known good state and reprogresses until
+     * current time
+     * @param rewindToStateBefore Tick value to load a state before
+     */
+    rewindAndCatchUp(rewindToStateBefore: number) {
+        const oldNextGameTick = this.nextGameTick;
+        this.shouldUpdateGame = false;
+        const state = History.getInstance().getStateBefore(rewindToStateBefore);
+        this.loadState(state.gameTick);
+        // TODO Optimize this
+        // TODO Make sure this loaded state is a common aggrement point (like if packets are reordered, this breaks)
+        History.getInstance().eraseStatesAfter(state.gameTick);
+        History.getInstance().eraseStatesBefore(state.gameTick);
+        // Catch up to current game tick quickly
+        // BUG The time lost here might desync players, synchronize with timestamps
+        for (; this.nextGameTick < oldNextGameTick; this.nextGameTick++) {
+            this.updateLoop(this.nextGameTick);
+        }
+        this.shouldUpdateGame = true;
+    }
+
+    loadState(gameTick: number) {
+        this.entities.forEach((e) => {
+            e.loadState(gameTick);
+        });
+        this.nextGameTick = gameTick + 1;
+    }
+
+    saveState(gameTick: number) {
+        this.entities.forEach((e) => {
+            e.saveState(gameTick);
+        });
     }
 
     /**
@@ -41,8 +91,8 @@ class Main extends PIXI.Application {
      * This loop can rewind and process again.
      * The actual loop count for entities might differ.
      * They should handle synchronizing the state themselves.
-     * 
-     * @params gameTick First tick to receive has to be 1 as 0 is for initialization
+     *
+     * @param gameTick First tick to receive has to be 1 as 0 is for initialization
      */
     updateLoop(gameTick: number) {
         this.entities.forEach((e) => {
@@ -50,7 +100,7 @@ class Main extends PIXI.Application {
         });
     }
 
-    inputTick() {}
+    inputTick() { }
 }
 
 (window as any).GoOnline = GoOnline.getInstance();

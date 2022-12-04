@@ -50,6 +50,17 @@ export default class History {
         throw Error(`State with gameTick '${gameTick}' not found!`);
     }
 
+    getStateBefore(gameTick: number): SavedState {
+        // TODO Can optimize with a hash map
+        for (let i = this.savedStates.length - 1; i >= 0; i--) {
+            const savedState = this.savedStates[i];
+            if (savedState.gameTick < gameTick) {
+                return savedState;
+            }
+        }
+        throw Error(`State with gameTick less than '${gameTick}' not found!`);
+    }
+
     eraseStatesAfter(gameTick: number) {
         if (this.savedStates.length == 0) {
             throw Error(
