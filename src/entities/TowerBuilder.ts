@@ -2,11 +2,7 @@ import InputHistory from "../InputHistory";
 import { InputKeys } from "../InputReceiver";
 import Entity from "./Entity";
 import TowerBlock from "./TowerBlock";
-
-interface Point {
-    x: number,
-    y: number
-}
+import { Point } from "../utils";
 
 /**
  * TowerBuilder instantiates TowerBlocks, swings them, and when
