@@ -31,4 +31,14 @@ export default class InputReceiver {
     isKeyDown(key: string): boolean {
         return !!this.keyIsDown[key.toLowerCase()];
     }
+    
+    getCurrentInputs() {
+        const currentInputs: {[key: string]: boolean} = {};
+        currentInputs[InputKeys.CURR_PLAYER_DROP] = this.isKeyDown("space") || this.isKeyDown("mouse1");
+        return currentInputs;
+    }
+}
+
+export enum InputKeys {
+    CURR_PLAYER_DROP = "CURR_PLAYER_DROP"
 }

@@ -1,4 +1,4 @@
-import History from "./History";
+import History from "../History";
 
 export default class Entity {
     private static nextEntityId = 0;
@@ -6,6 +6,9 @@ export default class Entity {
     private lastGameTick = 0;
     constructor() {
         this.id = Entity.nextEntityId++;
+    }
+    getId() {
+        return this.id;
     }
     updateLoop(gameTick: number) {
         if (gameTick - this.lastGameTick > 1) {
@@ -47,7 +50,7 @@ export default class Entity {
      * Returns entity state to be saved.
      * Needs to be overriden.
      */
-    protected _createState() {
+    protected _createState(): any {
         return null;
     }
     /**
